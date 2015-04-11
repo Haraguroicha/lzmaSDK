@@ -22,3 +22,7 @@ public func extract7zArchive(archivePath: String, #dirName: String, #preserveDir
 public func extract7zArchiveEntry(archivePath: String, #archiveEntry: String, #outPath: String) -> Bool {
     return LZMAExtractor.extractArchiveEntry(archivePath, archiveEntry: archiveEntry, outPath: outPath)
 }
+
+public func doExtract7zArchive(archivePath: String, #archiveEntry: String?, #outPath: String?, #preserveDir: Bool) -> Bool {
+    return LZMAExtractor.doExtract7zArchive(archivePath, archiveEntry: archiveEntry, outPath: outPath, preserveDir: preserveDir)
+}
