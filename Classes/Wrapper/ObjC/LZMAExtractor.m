@@ -54,6 +54,35 @@ int do7z_extract_entry(char *archivePath, char *archiveCachePath, char *entryNam
   return;
 }
 
++ (void)prepareDirectory:(NSString *)directory
+{
+    BOOL worked, isDir, existsAlready;
+    existsAlready = [[NSFileManager defaultManager] fileExistsAtPath:directory isDirectory:&isDir];
+
+    if (existsAlready && !isDir) {
+        worked = [[NSFileManager defaultManager] removeItemAtPath:directory error:nil];
+        NSAssert(worked, @"could not remove existing file with same name as tmp dir");
+        // create the directory below
+    }
+
+    if (existsAlready && isDir) {
+        // Remove all the files in the named tmp dir
+        NSArray *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil];
+        NSAssert(contents, @"contentsOfDirectoryAtPath failed");
+        for (NSString *path in contents) {
+            NSString *myTmpDirPath = [directory stringByAppendingPathComponent:path];
+            worked = [[NSFileManager defaultManager] removeItemAtPath:myTmpDirPath error:nil];
+            NSAssert(worked, @"could not remove existing file");
+        }
+    } else {
+        worked = [[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
+        NSAssert(worked, @"could not create tmp dir");
+    }
+
+    worked = [[NSFileManager defaultManager] changeCurrentDirectoryPath:directory];
+    NSAssert(worked, @"cd to tmp 7z dir failed");
+}
+
 // Extract all the contents of a .7z archive directly into the indicated dir
 
 + (NSArray*) extract7zArchive:(NSString*)archivePath
@@ -62,35 +91,8 @@ int do7z_extract_entry(char *archivePath, char *archiveCachePath, char *entryNam
 {
   NSAssert(archivePath, @"archivePath");
   NSAssert(dirName, @"dirName");
-  
-  BOOL worked, isDir, existsAlready;
-  
-  NSString *myTmpDir = dirName;
-  existsAlready = [[NSFileManager defaultManager] fileExistsAtPath:myTmpDir isDirectory:&isDir];
-  
-  if (existsAlready && !isDir) {
-    worked = [[NSFileManager defaultManager] removeItemAtPath:myTmpDir error:nil];
-    NSAssert(worked, @"could not remove existing file with same name as tmp dir");
-    // create the directory below
-  }
-  
-  if (existsAlready && isDir) {
-    // Remove all the files in the named tmp dir
-    NSArray *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:myTmpDir error:nil];
-    NSAssert(contents, @"contentsOfDirectoryAtPath failed");
-    for (NSString *path in contents) {
-      NSString *myTmpDirPath = [myTmpDir stringByAppendingPathComponent:path];
-      worked = [[NSFileManager defaultManager] removeItemAtPath:myTmpDirPath error:nil];
-      NSAssert(worked, @"could not remove existing file");
-    }
-  } else {
-    worked = [[NSFileManager defaultManager] createDirectoryAtPath:myTmpDir withIntermediateDirectories:YES attributes:nil error:nil];    
-    NSAssert(worked, @"could not create tmp dir");
-  }
-  
-  worked = [[NSFileManager defaultManager] changeCurrentDirectoryPath:myTmpDir];
-  NSAssert(worked, @"cd to tmp 7z dir failed");
 
+  [self prepareDirectory:dirName];
   BOOL result = [self doExtract7zArchive:archivePath
                           archiveEntry:nil
                                outPath:nil
@@ -101,7 +103,7 @@ int do7z_extract_entry(char *archivePath, char *archiveCachePath, char *entryNam
   
   NSMutableArray *fullPathContents = [NSMutableArray array];
 
-  [self recurseIntoDirectories:fullPathContents dirName:myTmpDir entryPrefix:@""];
+  [self recurseIntoDirectories:fullPathContents dirName:dirName entryPrefix:@""];
   
   return [NSArray arrayWithArray:fullPathContents];
 }
