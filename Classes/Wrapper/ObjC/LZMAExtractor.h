@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface LZMAExtractor : NSObject {	
+@interface LZMAExtractor : NSObject {
 }
 
 // Extract all the contents of a .7z archive directly into the indicated dir.
